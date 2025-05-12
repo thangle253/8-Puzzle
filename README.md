@@ -59,215 +59,163 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 - 🔹 **Học tăng cường (Reinforcement Learning)**  
   - **Q-Learning**: Giúp tác nhân học chính sách giải bài toán 8-Puzzle thông qua trải nghiệm thử-sai và cập nhật giá trị hành động dựa trên phần thưởng nhận được.
 
+
 ---
 
 ### Mỗi thuật toán được hiển thị với:
 
 - ✏️ **Cấu trúc bài toán**: Trạng thái dạng tuple 3x3, định nghĩa hành động (lên, xuống, trái, phải), điều kiện đích và chi phí di chuyển.
 - 🔁 **Lộ trình giải**: Dãy bước đi từ trạng thái đầu đến trạng thái đích.
-- 🎞️ **Hiệu ứng hoạt ảnh**: Mỗi bước di chuyển được mô phỏng mượt mà trên giao diện Pygame.
+- 🎞️ **Hiệu ứng hoạt họa**: Mỗi bước di chuyển được mô phỏng mượt mà trên giao diện Pygame.
 - 📈 **Thống kê kết quả**: Thời gian chạy, số bước thực hiện, số lượng node mở rộng.
 - 💬 **Đánh giá thuật toán**: So sánh các phương pháp dựa trên tốc độ, độ chính xác và mức sử dụng bộ nhớ.
-
 ---
-### 2.1. Nhóm 1: Tìm kiếm không sử dụng thông tin (Uninformed Search)
+## 2. Triển khai thuật toán giải 8-Puzzle
 
-#### Mô tả bài toán
-- **Trạng thái**: Đại diện dưới dạng tuple gồm 9 số nguyên từ 0 đến 8, trong đó 0 tượng trưng cho ô trống.
-- **Hành động**: Di chuyển ô trống theo bốn hướng cơ bản: lên, xuống, trái, phải.
-- **Điều kiện đích**: Trạng thái cần đạt là (1, 2, 3, 4, 5, 6, 7, 8, 0).
-- **Chi phí hành động**: Mỗi bước di chuyển có chi phí bằng 1.
-- **Đặc trưng**: Không sử dụng hàm heuristic để đánh giá, duyệt trạng thái theo cấu trúc mở rộng nhất định.
+### 2.1. Tìm kiếm không sử dụng thông tin (Uninformed Search)
 
-#### Các thuật toán:
-- **BFS** – mở rộng đồng loạt theo tầng.
-- **DFS** – đi sâu từng nhánh trước, sau đó mới quay lại.
-- **UCS** – mở rộng theo tổng chi phí từ gốc.
-- **IDDFS** – kết hợp DFS với tăng dần giới hạn độ sâu.
+#### Mô tả
+- **Trạng thái**: Tuple gồm 9 phần tử đại diện cho bảng 3x3, với số 0 là ô trống.
+- **Hành động**: Di chuyển ô trống lên, xuống, trái, phải.
+- **Mục tiêu**: Trạng thái đích là (1, 2, 3, 4, 5, 6, 7, 8, 0).
+- **Chi phí**: Mỗi bước di chuyển có chi phí là 1.
+- **Đặc trưng**: Không sử dụng thông tin hướng dẫn nào (heuristic).
 
-#### Minh họa
+#### Thuật toán
+- BFS – tìm kiếm theo tầng.
+- DFS – duyệt theo chiều sâu.
+- UCS – ưu tiên theo tổng chi phí.
+- IDDFS – kết hợp DFS với giới hạn độ sâu lặp.
+
+#### GIF minh họa thuật toán  
+#### 🔍 BFS  
 ![BFS](gif/BFS.gif)  
+#### 🔍 DFS  
 ![DFS](gif/DFS.gif)  
+#### 🔍 UCS  
 ![UCS](gif/UCS.gif)  
+#### 🔍 IDDFS  
 ![IDDFS](gif/IDDFS.gif)
 
-#### So sánh
-![Uninformed Search](img/uninformed.png)
-
-- **Ưu điểm**:
-  - BFS và UCS đảm bảo tìm được lời giải tối ưu (nếu có).
-  - DFS có thể tìm lời giải nhanh nếu ở gần gốc.
-  - IDDFS tiết kiệm bộ nhớ, kết hợp ưu điểm BFS và DFS.
-
-- **Nhược điểm**:
-  - BFS và UCS tốn nhiều bộ nhớ vì phải lưu toàn bộ trạng thái theo tầng.
-  - DFS không đảm bảo tìm lời giải ngắn nhất, dễ rơi vào vòng lặp.
-  - IDDFS chậm nếu lời giải nằm sâu, vì phải lặp lại nhiều tầng.
-
 ---
 
-### 2.2. Nhóm 2: Tìm kiếm có thông tin (Informed Search)
+### 2.2. Tìm kiếm có thông tin (Informed Search)
 
-#### Mô tả bài toán
-- **Heuristic sử dụng**: Hàm Manhattan – tổng khoảng cách từ vị trí hiện tại đến vị trí đích của mỗi ô số.
-- **Công thức đánh giá**:
-  - **Greedy**: f(n) = h(n)
-  - **A\***: f(n) = g(n) + h(n)
-  - **IDA\***: giống A* nhưng giới hạn theo ngưỡng f(n), tiết kiệm bộ nhớ.
+#### Mô tả
+- **Heuristic**: Manhattan distance.
+- **Chi phí**: f(n) = g(n) + h(n)
+- **Ghi chú**:
+  - Greedy chỉ dùng h(n)
+  - A* và IDA* dùng cả g(n) và h(n)
 
-#### Các thuật toán:
-- **Greedy Search** – mở rộng nhanh nhất theo ước lượng heuristic.
-- **A\*** – cân bằng giữa chi phí thực và chi phí ước lượng.
-- **IDA\*** – giống A* nhưng duyệt theo ngưỡng lặp.
+#### Thuật toán
+- Greedy
+- A*
+- IDA*
 
-#### Minh họa
+#### GIF minh họa thuật toán  
+#### 🔍 Greedy  
 ![Greedy](gif/GREEDY.gif)  
-![A\*](gif/A_STAR.gif)  
-![IDA\*](gif/IDA_STAR.gif)
-
-#### So sánh
-![Informed Search](img/informed.png)
-
-- **Ưu điểm**:
-  - Greedy nhanh, phù hợp khi cần lời giải gấp.
-  - A* tìm được đường đi tối ưu nếu heuristic chấp nhận được.
-  - IDA* tiết kiệm bộ nhớ, tốt cho bài toán lớn.
-
-- **Nhược điểm**:
-  - Greedy dễ bỏ qua lời giải ngắn hơn vì chỉ theo hướng tốt hiện tại.
-  - A* tốn RAM nếu đồ thị lớn.
-  - IDA* có thể lặp lại nhiều trạng thái vì không lưu toàn bộ cây đã duyệt.
+#### 🔍 A*  
+![A*](gif/A_STAR.gif)  
+#### 🔍 IDA*  
+![IDA*](gif/IDA_STAR.gif)
 
 ---
 
-### 2.3. Nhóm 3: Tìm kiếm có ràng buộc (Constraint Satisfaction)
+### 2.3. Tìm kiếm có ràng buộc (Constraint Satisfaction Search)
 
-#### Mô tả bài toán
-- **Biến**: 9 biến X1–X9 đại diện cho 9 ô.
-- **Miền giá trị**: Các số từ 0 đến 8, không trùng lặp.
+#### Mô tả
+- **Biến**: X1 đến X9 ứng với 9 ô.
+- **Miền giá trị**: 0 đến 8, không trùng.
 - **Ràng buộc**:
-  - Ngang: bên phải phải lớn hơn bên trái 1 đơn vị.
-  - Dọc: ô dưới lớn hơn ô trên 3 đơn vị.
-  - Không trùng lặp giữa các biến.
+  - Ngang: bên phải lớn hơn bên trái 1
+  - Dọc: dưới lớn hơn trên 3
+  - Không trùng giá trị
 
-#### Các thuật toán:
-- **Backtracking CSP** – gán giá trị biến bằng quay lui truyền thống.
-- **Constraint Checking** – kiểm tra tính hợp lệ từng bước khi gán.
-- **AC-3** – lan truyền ràng buộc, thu hẹp miền giá trị trước khi giải.
+#### Thuật toán
+- Backtracking CSP
+- Constraint Checking
+- AC-3 (lan truyền ràng buộc)
 
-#### Minh họa
+#### GIF minh họa thuật toán  
+#### 🔍 Backtracking CSP  
 ![CSP](gif/CSP.gif)  
-![AC3](gif/AC3.gif)  
-![Trial and Error](gif/TRIAL.gif)
-
-#### So sánh
-![CSP Overview](img/constraint.png)
-
-- **Ưu điểm**:
-  - Backtracking đơn giản, dễ hiểu.
-  - Constraint Checking cải thiện độ chính xác khi kiểm tra sớm.
-  - AC-3 giảm miền hiệu quả trước khi quay lui.
-
-- **Nhược điểm**:
-  - CSP cơ bản chậm vì thử nhiều tổ hợp.
-  - Constraint Checking có thể bỏ sót nếu không đầy đủ ràng buộc.
-  - AC-3 phức tạp hơn, cần quản lý hàng đợi các cung ràng buộc.
+#### 🔍 Constraint Checking  
+![Trial and Error](gif/TRIAL.gif)  
+#### 🔍 AC-3  
+![AC-3](gif/AC3.gif)
 
 ---
 
-### 2.4. Nhóm 4: Tìm kiếm cục bộ (Local Search)
+### 2.4. Tìm kiếm cục bộ (Local Search)
 
-#### Mô tả bài toán
-- Dựa vào trạng thái hiện tại, chọn chuyển động “tốt hơn” tiếp theo.
-- Không mở rộng toàn bộ cây trạng thái, chỉ cải tiến cục bộ.
+#### Mô tả
+- Tối ưu dần trạng thái hiện tại mà không duyệt toàn bộ không gian.
 
-#### Các thuật toán:
-- **Simple Hill Climbing** – chọn trạng thái gần nhất tốt hơn.
-- **Steepest-Ascent** – chọn trạng thái tốt nhất trong tất cả lân cận.
-- **Stochastic Hill Climbing** – chọn ngẫu nhiên 1 lân cận tốt hơn.
-- **Simulated Annealing** – đôi khi chấp nhận giải xấu để thoát cực trị cục bộ.
-- **Genetic Algorithm** – tiến hóa theo quần thể, đột biến và lai ghép.
-- **Beam Search** – giữ lại k trạng thái tốt nhất ở mỗi bước.
+#### Thuật toán
+- Simple Hill Climbing
+- Steepest Ascent Hill Climbing
+- Stochastic Hill Climbing
+- Simulated Annealing
+- Genetic Algorithm
+- Beam Search
 
-#### Minh họa
-![Simple Hill](gif/SIMPLE_CLIMBING.gif)  
-![Steepest](gif/STEEPEST_CLIMBING.gif)  
+#### GIF minh họa thuật toán  
+#### 🔍 Simple Hill Climbing  
+![Simple Hill Climbing](gif/SIMPLE_CLIMBING.gif)  
+#### 🔍 Steepest Ascent Hill Climbing  
+![Steepest Climbing](gif/STEEPEST_CLIMBING.gif)  
+#### 🔍 Stochastic Hill Climbing  
 ![Stochastic](gif/STOCHASTIC.gif)  
-![SA](gif/SIMULATED.gif)  
-![Genetic](gif/GENETIC.gif)  
-![Beam](gif/BEAM_SEARCH.gif)
-
-#### So sánh
-![Local Search](img/local1.png)
-
-- **Ưu điểm**:
-  - Tốc độ cao, bộ nhớ thấp.
-  - Phù hợp khi lời giải nằm gần trạng thái ban đầu.
-  - Genetic có thể khám phá không gian rộng.
-
-- **Nhược điểm**:
-  - Dễ kẹt ở điểm tối ưu cục bộ.
-  - Kết quả không đảm bảo tối ưu toàn cục.
-  - Cần tinh chỉnh tham số nhiều (SA, GA).
+#### 🔍 Simulated Annealing  
+![Simulated Annealing](gif/SIMULATED.gif)  
+#### 🔍 Genetic Algorithm  
+![Genetic Algorithm](gif/GENETIC.gif)  
+#### 🔍 Beam Search  
+![Beam Search](gif/BEAM_SEARCH.gif)
 
 ---
 
-### 2.5. Nhóm 5: Môi trường không xác định (Complex / Uncertain Environments)
+### 2.5. Tìm kiếm trong môi trường không xác định (Complex Environments)
 
-#### Mô tả bài toán
-- Trạng thái không rõ ràng, hoặc tác nhân không quan sát đầy đủ.
-- Làm việc với **tập trạng thái khả dĩ (belief states)**.
+#### Mô tả
+- Làm việc với tập các trạng thái khả dĩ (belief state) do không biết chính xác trạng thái thật.
 
-#### Các thuật toán:
-- **No Observation Search** – không biết trạng thái ban đầu là gì.
-- **Partial Observable Search** – chỉ biết một phần trạng thái.
-- **AND-OR Search** – tìm kế hoạch hành động sao cho mọi nhánh đều dẫn đến đích.
+#### Thuật toán
+- No Observation Search
+- Partial Observable Search
+- AND-OR Search
 
-#### Minh họa
-![No Obs](gif/SENSORLESS.gif)  
-![Partial](gif/BELIEF_BFS.gif)  
-![And-Or](gif/AND_OR.gif)
-
-#### So sánh
-![Complex](img/complex1.png)
-
-- **Ưu điểm**:
-  - Mô hình hóa được bài toán thực tế có yếu tố mơ hồ.
-  - AND-OR có thể lập kế hoạch với nhiều kết quả hành động.
-
-- **Nhược điểm**:
-  - Rất tốn tài nguyên (RAM, thời gian).
-  - Cần xử lý nhiều trạng thái cùng lúc, dễ bị nổ trạng thái.
+#### GIF minh họa thuật toán  
+#### 🔍 No Observation Search  
+![Sensorless](gif/SENSORLESS.gif)  
+#### 🔍 Partial Observable Search  
+![Belief-State BFS](gif/BELIEF_BFS.gif)  
+#### 🔍 AND-OR Search  
+![AND-OR](gif/AND_OR.gif)
 
 ---
 
-### 2.6. Nhóm 6: Học tăng cường (Reinforcement Learning)
+### 2.6. Học tăng cường (Reinforcement Learning)
 
-#### Mô tả bài toán
-- Tác nhân học từ tương tác với môi trường thay vì duyệt toàn bộ không gian.
-- Cập nhật chính sách hành động tối ưu theo bảng **Q-Table**.
+#### Mô tả
+- Sử dụng Q-Table để học dần chính sách di chuyển tối ưu thông qua phần thưởng.
+- Phần thưởng:
+  - +100 nếu đến đích
+  - -1 cho mỗi bước
+- Cập nhật theo công thức:  
+  **Q(s, a) = Q(s, a) + α[r + γ·max(Q(s’, a’)) – Q(s, a)]**
 
-#### Thuật toán:
-- **Q-Learning** – học thông qua phần thưởng: +100 khi đến đích, -1 cho mỗi bước, và dùng công thức Q-learning để cập nhật giá trị hành động.
+#### Thuật toán
+- Q-Learning
 
-#### Minh họa
+#### GIF minh họa thuật toán  
+#### 🔍 Q-Learning  
 ![Q-Learning](gif/Q_LEARNING.gif)
 
-#### So sánh
-![Q-Table](img/qlearning.png)
-
-- **Ưu điểm**:
-  - Không cần mô hình rõ ràng.
-  - Có khả năng tự thích nghi nếu môi trường thay đổi.
-  - Học được chính sách tối ưu qua trải nghiệm.
-
-- **Nhược điểm**:
-  - Cần nhiều lần lặp (episode) để hội tụ.
-  - Phụ thuộc vào các tham số (alpha, gamma, epsilon).
-  - Dễ bị lặp vô ích nếu không xử lý visited tốt.
-
-
 ---
+
 ## 3. 🚀 Cách chạy chương trình
 
 ```bash
