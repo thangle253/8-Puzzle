@@ -172,7 +172,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 
 ---
 
-### 2.5. Tìm kiếm trong môi trường không xác định (Complex Environments)
+### 2.5. Tìm kiếm trong môi trường phức tạp (Complex Environments)
 
 #### Mô tả
 - Làm việc với tập các trạng thái khả dĩ (belief state) do không biết chính xác trạng thái thật.
