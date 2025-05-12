@@ -224,3 +224,30 @@ pip install pygame
 
 # Chạy ứng dụng
 python main.py
+
+---
+
+## 4. Kết luận
+
+Dự án **8-Puzzle Visualizer** là minh chứng rõ ràng cho việc vận dụng hiệu quả các thuật toán Trí tuệ Nhân tạo vào một bài toán kinh điển. Qua quá trình xây dựng và hoàn thiện, hệ thống đã đáp ứng được các mục tiêu đề ra:
+
+- **Triển khai toàn diện 6 nhóm thuật toán**: Từ các kỹ thuật tìm kiếm cơ bản như BFS, DFS cho đến các phương pháp nâng cao như A*, Genetic Algorithm và Q-Learning. Mỗi nhóm được thiết kế riêng biệt, thể hiện sự đa dạng trong cách tiếp cận và giải quyết vấn đề.
+
+- **Đánh giá hiệu năng chi tiết**: Mỗi thuật toán đều được kiểm nghiệm dựa trên số bước mở rộng và thời gian xử lý. Nhờ đó, người dùng dễ dàng nhận diện được ưu – nhược điểm trong từng tình huống áp dụng cụ thể.
+
+- **Giao diện trực quan, dễ sử dụng**: Nhờ ứng dụng Pygame, hệ thống mang lại trải nghiệm thân thiện với người dùng. Giao diện hỗ trợ nhập trạng thái tùy chỉnh, lựa chọn thuật toán, xem từng bước giải cùng các chỉ số thống kê quan trọng.
+
+- **Hỗ trợ học tập và thực hành**: Đây không chỉ là một công cụ giải bài toán 8-Puzzle, mà còn là môi trường học tập sinh động, giúp sinh viên trực quan hóa kiến thức AI thông qua mô phỏng, GIF minh họa và phân tích kết quả thực tế. Dự án cũng góp phần rèn luyện kỹ năng lập trình, tư duy thuật toán và khả năng giải quyết vấn đề.
+
+---
+
+## 👤 Tác giả
+
+- **Lê Văn Chiến Thắng**  
+- **MSSV:** 23110328  
+- **Môn học:** Trí Tuệ Nhân Tạo  
+- **Trường:** Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)  
+
+---
+
+> © 2025 – Lê Văn Chiến Thắng – HCMUTE
