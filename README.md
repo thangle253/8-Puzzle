@@ -60,8 +60,6 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
   - **Q-Learning**: Giúp tác nhân học chính sách giải bài toán 8-Puzzle thông qua trải nghiệm thử-sai và cập nhật giá trị hành động dựa trên phần thưởng nhận được.
 
 
----
-
 ### Mỗi thuật toán được hiển thị với:
 
 - ✏️ **Cấu trúc bài toán**: Trạng thái dạng tuple 3x3, định nghĩa hành động (lên, xuống, trái, phải), điều kiện đích và chi phí di chuyển.
@@ -97,7 +95,6 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### 🔍 IDDFS  
 ![IDDFS](gif/IDDFS.gif)
 
----
 
 ### 2.2. Tìm kiếm có thông tin (Informed Search)
 
@@ -121,8 +118,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### 🔍 IDA*  
 ![IDA*](gif/IDA_STAR.gif)
 
----
-
+ 
 ### 2.3. Tìm kiếm có ràng buộc (Constraint Satisfaction Search)
 
 #### Mô tả
@@ -146,7 +142,6 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### 🔍 AC-3  
 ![AC-3](gif/AC3.gif)
 
----
 
 ### 2.4. Tìm kiếm cục bộ (Local Search)
 
@@ -195,7 +190,6 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### 🔍 AND-OR Search  
 ![AND-OR](gif/AND_OR.gif)
 
----
 
 ### 2.6. Học tăng cường (Reinforcement Learning)
 
