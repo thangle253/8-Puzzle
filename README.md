@@ -224,7 +224,7 @@ pip install pygame
 
 # Chạy ứng dụng
 python main.py
-
+```
 ---
 
 ## 4. Kết luận
