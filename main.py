@@ -89,6 +89,8 @@ def main():
         draw_step_count(step_count)
         draw_title_and_footer()  
         draw_result_table(algorithm_results)
+        if solving and solution:
+            draw_progress_bar(step, len(solution))
         if editing_state:
             draw_input_board(input_state)
         pygame.display.flip()
@@ -405,9 +407,11 @@ def main():
                             step = 0
                             step_count = 0
                             start = time.time()
-                            solution = selected_algorithm(start_state)
+
+                            # ✅ Gọi và nhận solution, expansions
+                            solution, expansions = selected_algorithm(start_state)
+
                             elapsed = time.time() - start
-                            expansions = len(solution) if solution else 0
                             algorithm_results.append((selected_algorithm_name, elapsed, expansions))
 
                             if solution is None:

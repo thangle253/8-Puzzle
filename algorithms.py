@@ -11,6 +11,7 @@ import pygame
 # Hàm giải thuật BFS (Breadth-First Search): tìm kiếm theo chiều rộng, mở rộng tất cả các trạng thái cùng một mức độ trước khi chuyển sang mức độ tiếp theo
 def bfs_solve(start_state):
     return generic_solve(start_state, queue=deque([(start_state, [])]), pop_method='popleft')
+
 # Hàm giải thuật DFS (Depth-First Search): tìm kiếm theo chiều sâu, mở rộng các trạng thái theo chiều sâu trước khi quay lại
 def dfs_solve(start_state, max_depth=100):
     stack = [(start_state, [], 0)]  # Thêm một giá trị depth vào mỗi phần tử
@@ -21,7 +22,8 @@ def dfs_solve(start_state, max_depth=100):
         state, path, depth = stack.pop()
 
         if state == list(range(1, 9)) + [0]:
-            return path
+            return path, len(visited)
+
 
         if depth >= max_depth:  # Nếu chiều sâu vượt quá max_depth thì tiếp tục
             continue
@@ -63,7 +65,8 @@ def generic_solve(start_state, queue, pop_method='pop', is_priority=False):
                 state, path = queue.popleft()
 
         if state == goal_state:
-            return path
+            return path, len(visited)
+
 
         zero_idx = state.index(0)
         moves = [-3, 3, -1, 1]
@@ -90,7 +93,9 @@ def generic_solve(start_state, queue, pop_method='pop', is_priority=False):
                     else:
                         queue.append((new_state, path + [(zero_idx, new_idx)]))
 
-    return None
+    return None, len(visited)
+
+
 
 # Hàm giải thuật UCS (Uniform Cost Search): mở rộng các trạng thái theo thứ tự tổng chi phí nhỏ nhất từ trạng thái ban đầu đến trạng thái hiện tại.
 def ucs_solve(start_state):
@@ -104,7 +109,8 @@ def ucs_solve(start_state):
         cost, state, path = heapq.heappop(queue)
         
         if state == goal_state:
-            return path
+            return path, len(visited)
+
         
         zero_idx = state.index(0)
         moves = [-3, 3, -1, 1]
@@ -128,17 +134,17 @@ def greedy_solve(start_state):
 
 # Hàm giải thuật tìm kiếm sâu dần lặp IDDFS (Iterative Deepening Depth-First Search): tìm kiếm theo chiều sâu với giới hạn độ sâu tăng dần
 def iddfs_solve(start_state):
-    goal_state = list(range(1, 9)) + [0] # Trạng thái đích (1,2,3,4,5,6,7,8,0)
+    goal_state = list(range(1, 9)) + [0]
 
-    # Hàm dls (Depth-Limited Search): tìm kiếm theo chiều sâu với giới hạn độ sâu
-    def dls(state, path, depth_limit, visited):
+    def dls(state, path, depth_limit, visited, expansions):
+        expansions[0] += 1
         if state == goal_state:
             return path
         if len(path) >= depth_limit:
             return None
 
         zero_idx = state.index(0)
-        moves = [-3, 3, -1, 1]  # Lên, Xuống, Trái, Phải
+        moves = [-3, 3, -1, 1]
         next_states = []
 
         for move in moves:
@@ -153,26 +159,24 @@ def iddfs_solve(start_state):
                 if tuple(new_state) not in visited:
                     next_states.append((new_state, path + [(zero_idx, new_idx)]))
 
-        # Ưu tiên trạng thái gần lời giải hơn bằng Manhattan Distance để giảm số bước lặp không cần thiết
         next_states.sort(key=lambda x: manhattan_distance(x[0]))
-        # Duyệt qua từng trạng thái tiếp theo
         for new_state, new_path in next_states:
-            visited.add(tuple(new_state)) # Đánh dấu trạng thái đã duyệt
-            result = dls(new_state, new_path, depth_limit, visited) # Gọi đệ quy với trạng thái mới
+            visited.add(tuple(new_state))
+            result = dls(new_state, new_path, depth_limit, visited, expansions)
             if result is not None:
                 return result
-            visited.remove(tuple(new_state))  # Bỏ đánh dấu nếu không tìm thấy lời giải
+            visited.remove(tuple(new_state))
 
         return None
 
-    # Dùng Iterative Deepening với nhiều độ sâu khác nhau
-    for depth_limit in range(5, 50, 5):  # Tăng dần giới hạn độ sâu
+    for depth_limit in range(5, 50, 5):
         visited = set([tuple(start_state)])
-        solution = dls(start_state, [], depth_limit, visited)
+        expansions = [0]
+        solution = dls(start_state, [], depth_limit, visited, expansions)
         if solution is not None:
-            return solution  # Nếu tìm thấy lời giải, trả về ngay
+            return solution, expansions[0]
 
-    return None  # Không tìm thấy lời giải
+    return None, 0
 
 # Hàm giải thuật A* (A Star Search)
 def astar_solve(start_state):
@@ -264,7 +268,8 @@ def hill_climbing_solve(start_state):
         current_state[zero_idx], current_state[new_idx] = current_state[new_idx], current_state[zero_idx]
         path.append(best_move)
     
-    return path
+    return path, len(path) if path else 0
+
 
 # Hàm giải thuật Steepest Ascent Hill Climbing: tìm kiếm theo chiều cao với bước đi tốt nhất tại mỗi bước
 def steepest_ascent_hill_climbing_solve(start_state):
@@ -312,7 +317,8 @@ def steepest_ascent_hill_climbing_solve(start_state):
         current_state[zero_idx], current_state[new_idx] = current_state[new_idx], current_state[zero_idx]
         path.append((zero_idx, new_idx))
     
-    return path
+    return path, len(path) if path else 0
+
 
 # Hàm giải thuật Hill Climbing với ngẫu nhiên
 def stochastic_hill_climbing_solve(start_state):
@@ -353,7 +359,8 @@ def stochastic_hill_climbing_solve(start_state):
         current_state = next_state
         path.append(move)
 
-    return path
+    return path, len(path) if path else 0
+
 
 # Hàm giải thuật Simulated Annealing
 def simulated_annealing_solve(start_state):
@@ -366,7 +373,8 @@ def simulated_annealing_solve(start_state):
 
     while True:
         if state == goal:
-            return path
+            return path, len(path) if path else 0
+
 
         zero_idx = state.index(0)
         moves = [-3, 3, -1, 1]
@@ -423,7 +431,7 @@ def beam_search_solve(start_state, beam_width=2):
 
         for _, state, path in queue: #_ là giá trị heuristic cần dùng đến
             if state == goal_state:
-                return path
+                return path, len(path) if path else 0
 
             visited.add(tuple(state))
             zero_idx = state.index(0)
@@ -557,7 +565,8 @@ def no_observation_search(start_state=None):
         if all(state == goal_state for state in belief):
             print("✅ Tìm thấy lời giải!")
             print(f"🪜 Hành động: {path}")
-            return path
+            return path, expansions
+
 
         for action, (dr, dc) in moves.items():
             new_belief = set()
@@ -1534,7 +1543,7 @@ def genetic_algorithm_solve(start_state, population_size=200, max_generations=50
             print(f"🔁 Thế hệ {gen}, điểm tốt nhất: {int(best_score)}")
 
     print("Không tìm được trạng thái goal. Trả về đường đi tốt nhất.")
-    return best_path if best_path else None
+    return best_path, len(best_path) if best_path else (None, 0)
 
 # Hàm giải thuật Q-Learning: giải 8-puzzle sử dụng thuật toán học tăng cường
 def q_learning_solve(start_state, episodes=5000, alpha=0.1, gamma=0.9, epsilon=0.2):
@@ -1620,7 +1629,8 @@ def q_learning_solve(start_state, episodes=5000, alpha=0.1, gamma=0.9, epsilon=0
         if state == goal_state:
             return path
 
-    return path if state == goal_state else None
+    return path, len(path) if state == goal_state else (None, 0)
+
 
 # Hàm giải thuật Constraint Checking: giải 8-puzzle sử dụng thuật toán kiểm tra ràng buộc
 def constraint_checking_solve():

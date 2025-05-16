@@ -263,7 +263,7 @@ def draw_result_table(results):
     right_margin = WIDTH - (2 * 200 + 60)
     start_x = left_margin + (right_margin - left_margin - table_width) // 2 + 220
     start_y = PADDING + 200
-    row_height = 30
+    row_height = 50
     col_widths = [220, 120, 180]
 
     header_font = pygame.font.SysFont("arial", 26, bold=True)
