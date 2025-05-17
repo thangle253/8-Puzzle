@@ -4,8 +4,8 @@
 import pygame
 from utils import manhattan_distance
 from utils import is_movable
-from algorithms import and_or_search, backtracking_csp, bfs_solve, constraint_checking_solve, dfs_solve, no_observation_search, ucs_solve, greedy_solve, iddfs_solve, astar_solve, idastar_solve, hill_climbing_solve, steepest_ascent_hill_climbing_solve, stochastic_hill_climbing_solve, simulated_annealing_solve, beam_search_solve, partial_observable_search,  ac3, genetic_algorithm_solve, q_learning_solve
-
+from algorithms import  td_learning_solve, and_or_search, backtracking_csp, bfs_solve, constraint_checking_solve, dfs_solve, no_observation_search, ucs_solve, greedy_solve, iddfs_solve, astar_solve, idastar_solve, hill_climbing_solve, steepest_ascent_hill_climbing_solve, stochastic_hill_climbing_solve, simulated_annealing_solve, beam_search_solve, partial_observable_search,  ac3, genetic_algorithm_solve, q_learning_solve
+from show_log_window import show_log_window
 # Initialize Pygame
 pygame.init()
 
@@ -17,7 +17,7 @@ WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("8-Puzzle Solver")
 
 TILE_SIZE = 110  # Giảm kích thước ô
-PADDING = 40
+PADDING = 30
 MARGIN_TOP_INPUT = 450
 
 # Colors
@@ -78,8 +78,8 @@ def draw_buttons():
         ("Local", ["Hill Climbing", "SA HC", "Stochastic HC", "Simu Annealing", "Genetic", "Beam Search"], (0, 153, 76), (0, 204, 102)),
         ("Complex", ["And-Or Search", "Partial Obser", "No Observation"], (153, 102, 255), (204, 153, 255)),
         ("Constraint", ["Backtracking", "Const Checking", "AC3"], (120, 120, 120), (160, 160, 160)),
-        ("RL", ["Q-Learning"], (255, 220, 50), (255, 240, 100)),
-        ("Action", ["Input", "Apply","Random" ,"Reset",], (204, 0, 0), (255, 51, 51))
+        ("RL", ["Q-Learning","TD Learning"], (255, 220, 50), (255, 240, 100)),
+        ("Action", ["Reset", "Apply", "Input", "Random","Show Log"], (204, 0, 0), (255, 51, 51))
     ]
 
     button_width, button_height = 200, 45
@@ -135,8 +135,9 @@ def get_clicked_button(pos):
         ("Complex", [("And-Or Search", and_or_search), ("Partial Obser", partial_observable_search),
                      ("No Observation", no_observation_search)]),
         ("Constraint", [("Backtracking", backtracking_csp), ("Const Checking", constraint_checking_solve), ("AC3", ac3)]),
-        ("RL", [("Q-Learning", q_learning_solve)]),
-        ("Action", [("Reset", "reset"), ("Apply", "apply"), ("Random", "random")])
+        ("RL", [("Q-Learning", q_learning_solve), ("TD Learning", td_learning_solve)]),
+       ("Action", [("Reset", "reset"), ("Apply", "apply"), ("Input", "input"), ("Random", "random"), ("Show Log", "Show Log")])
+
     ]
 
     current_y = start_y
@@ -192,7 +193,7 @@ def draw_input_board(state):
 def draw_step_count(step_count):
     large_font = pygame.font.SysFont("arial", 50, bold=True)  # 👈 tăng size tại đây
     step_text = large_font.render(f"Steps: {step_count}", True, black)  # ✅ dùng font lớn
-    step_rect = step_text.get_rect(bottomright=(WIDTH - 130, HEIGHT - 25))
+    step_rect = step_text.get_rect(bottomright=(WIDTH - 30, HEIGHT - 25))
     WINDOW.blit(step_text, step_rect)
 
 
@@ -255,40 +256,39 @@ def draw_and_or_state(state):
     pygame.time.delay(500)  # Delay để người dùng có thể quan sát trạng thái
 
 def draw_result_table(results):
-    table_width = 500
+    col_widths = [185, 130, 170, 90]
+    table_width = sum(col_widths)  # để tính start_x và bảng
+
     table_height = 500
+    row_height = 50
 
     # Tính toán vị trí
     left_margin = 3 * TILE_SIZE + 2 * PADDING
     right_margin = WIDTH - (2 * 200 + 60)
-    start_x = left_margin + (right_margin - left_margin - table_width) // 2 + 220
+    start_x = left_margin + (right_margin - left_margin - table_width) // 2 + 240
     start_y = PADDING + 200
-    row_height = 50
-    col_widths = [220, 120, 180]
 
     header_font = pygame.font.SysFont("arial", 26, bold=True)
     cell_font = pygame.font.SysFont("arial", 22)
 
     # Vẽ bảng
-    pygame.draw.rect(WINDOW, (230, 230, 230), (start_x, start_y, sum(col_widths), table_height))
-    pygame.draw.rect(WINDOW, (0, 0, 0), (start_x, start_y, sum(col_widths), table_height), 2)
+    pygame.draw.rect(WINDOW, (230, 230, 230), (start_x, start_y, table_width, table_height))
+    pygame.draw.rect(WINDOW, (0, 0, 0), (start_x, start_y, table_width, table_height), 2)
 
-    headers = ["Algorithm", "Time (s)", "Expansions"]
+    headers = ["Algorithm", "Time (s)", "Expansions", "Steps"]
     for i, header in enumerate(headers):
         text = header_font.render(header, True, (0, 0, 0))
         text_rect = text.get_rect()
         if i < 2:
-            # căn trái
             text_rect.topleft = (start_x + sum(col_widths[:i]) + 10, start_y + 5)
         else:
-            # căn giữa Expansions
             text_rect.centerx = start_x + sum(col_widths[:i]) + col_widths[i] // 2
             text_rect.y = start_y + 5
         WINDOW.blit(text, text_rect)
 
-    for idx, (algo_name, time_taken, expansions) in enumerate(results):
+    for idx, (algo_name, time_taken, expansions, steps) in enumerate(results):
         y = start_y + (idx + 1) * row_height + 5
-        values = [algo_name, f"{time_taken:.4f}", str(expansions)]
+        values = [algo_name, f"{time_taken:.4f}", str(expansions), str(steps)]
         for j, val in enumerate(values):
             text = cell_font.render(val, True, (0, 0, 0))
             text_rect = text.get_rect()

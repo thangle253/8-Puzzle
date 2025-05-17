@@ -5,11 +5,13 @@ import random
 from utils import generate_fixed_puzzle
 import pygame
 from collections import deque
-from gui import WINDOW, draw_title_and_footer,  draw_board, draw_buttons, draw_step_count, draw_input_board, draw_progress_bar, get_clicked_button, get_clicked_input_cell, algorithm_results, draw_result_table
-from algorithms import ac3, and_or_search, bfs_solve, constraint_checking_solve, create_consistent_state, create_constraints, dfs_solve, find_solution_path, perform_ac3_with_solution, ucs_solve, greedy_solve, iddfs_solve, astar_solve, idastar_solve, hill_climbing_solve, steepest_ascent_hill_climbing_solve, stochastic_hill_climbing_solve, simulated_annealing_solve, beam_search_solve,partial_observable_search, no_observation_search
+from gui import WINDOW,WIDTH, HEIGHT, draw_title_and_footer,  draw_board, draw_buttons, draw_step_count, draw_input_board, draw_progress_bar, get_clicked_button, get_clicked_input_cell, algorithm_results, draw_result_table
+from algorithms import td_learning_solve,ac3, and_or_search, bfs_solve, constraint_checking_solve, create_consistent_state, create_constraints, dfs_solve, find_solution_path, perform_ac3_with_solution, ucs_solve, greedy_solve, iddfs_solve, astar_solve, idastar_solve, hill_climbing_solve, steepest_ascent_hill_climbing_solve, stochastic_hill_climbing_solve, simulated_annealing_solve, beam_search_solve,partial_observable_search, no_observation_search
 from algorithms import backtracking_csp, ac3_solve, genetic_algorithm_solve, q_learning_solve
 import time
-import gui  # 👈 Thêm dòng này để truy cập gui.editing_state
+from show_log_window import show_log_window 
+import gui 
+import multiprocessing
 
 # Initialize Pygame
 pygame.init()
@@ -19,12 +21,22 @@ white = (255, 255, 255)
 
 # Helper: Trích hành động từ cây kế hoạch AND-OR
 def extract_moves_from_plan(plan):
+    """Chuyển danh sách các trạng thái thành danh sách bước đi (zero_idx, new_idx)"""
+    if not plan or len(plan) < 2:
+        return []
+
     path = []
-    while isinstance(plan, dict):
-        action = next(iter(plan))
-        path.append(action)
-        plan = plan[action][0]  # lấy nhánh đầu tiên của AND-node
-    return path if plan == 'GOAL' else None
+    for i in range(len(plan) - 1):
+        s1 = plan[i]
+        s2 = plan[i + 1]
+        z1 = s1.index(0)
+        z2 = s2.index(0)
+        if s1[z2] == s2[z1]:
+            path.append((z1, z2))
+        else:
+            print(f"⚠️ Không xác định được bước đi giữa:\n{s1}\n{s2}")
+            return []
+    return path
 
 # Helper: Chuyển tên hành động (UP, DOWN,...) thành các bước di chuyển chỉ số
 def convert_moves_to_indices(start_state, move_names):
@@ -69,6 +81,7 @@ def update_input_cell(state, index):
 # Main Function
 def main():
     original_state = generate_fixed_puzzle()    
+    initial_state = original_state[:] 
     input_state = [None] * 9
     editing_state = True
     start_state = original_state[:]
@@ -81,7 +94,11 @@ def main():
     selected_algorithm_name = None
     step_count = 0
     ac3_data = None
+    solution_log = []  # danh sách chứa các bước để vẽ log
+    elapsed = 0
+    expansions_global = 0  
 
+    last_run_algorithm_name = ""
     while running:
         WINDOW.fill(white)
         draw_board(start_state, editing_state)
@@ -91,6 +108,20 @@ def main():
         draw_result_table(algorithm_results)
         if solving and solution:
             draw_progress_bar(step, len(solution))
+            if step < len(solution):
+                if isinstance(solution[step], tuple) and len(solution[step]) == 2:
+                    zero_idx, move_idx = solution[step]
+                    start_state[zero_idx], start_state[move_idx] = start_state[move_idx], start_state[zero_idx]
+                    step += 1
+                    step_count += 1
+                    pygame.display.flip()
+                    pygame.time.delay(300)  # Thời gian delay giữa mỗi bước
+                else:
+                    print("❌ Invalid step format:", solution[step])
+                    solving = False
+            else:
+                    solving = False
+
         if editing_state:
             draw_input_board(input_state)
         pygame.display.flip()
@@ -114,66 +145,55 @@ def main():
                 selected_algorithm, selected_algorithm_name = get_clicked_button(event.pos)
                 if selected_algorithm:
                     if selected_algorithm == "reset":
+                        print("🔄 Reset: Khôi phục lại trạng thái đã Apply gần nhất.")
+                        input_state = original_state[:]
                         start_state = original_state[:]
+                        editing_state = False
+                        gui.editing_state = False
                         solving = False
+                        solution = []
                         step = 0
                         step_count = 0
                         selected_algorithm_name = None
-                        editing_state = True
-                        input_state = [None] * 9
-                    
+
+                    elif selected_algorithm == "Show Log":
+                        if solution_log:
+                            log_lines = [
+                                f"Thuật toán: {last_run_algorithm_name}",
+                                f"Số bước: {len(solution_log) - 1}",
+                                f"Thời gian: {elapsed:.4f} giây",
+                                f"Số node mở rộng: {expansions}",
+                                ""
+                            ]
+                            for i, state in enumerate(solution_log):
+                                log_lines.append(f"Bước {i}:")
+                                for r in range(3):
+                                    row = state[r * 3: r * 3 + 3]
+                                    row_str = " ".join(str(x) if x != 0 else "_" for x in row)
+                                    log_lines.append(row_str)
+                                log_lines.append("")
+                            
+                            # 👉 Tạo process mới để giữ cửa sổ chính chạy
+                            p = multiprocessing.Process(target=show_log_window, args=(log_lines,))
+                            p.start()
+
+                   
                     elif selected_algorithm == "random":
                         nums = list(range(9))
                         random.shuffle(nums)
                         input_state = nums
                         print(f"Random in›put: {input_state}")
-                    elif selected_algorithm == "Input":
+                    elif selected_algorithm == "input":
                         editing_state = True
-                        gui.editing_state = True  # ✅ đảm bảo GUI cập nhật
+                        gui.editing_state = True
                         selected_algorithm_name = None
                         step = 0
                         step_count = 0
                         solving = False
+                        input_state = [None] * 9   # ✅ Làm trống hoàn toàn bảng input
                         print("📝 Đã quay lại chế độ nhập.")
+
                     elif selected_algorithm == "apply":
-                        if selected_algorithm_name == "Backtracking":
-                            result = backtracking_csp()
-
-                            if result and result["solution"]:
-                                # Start with an empty board
-                                start_state = [0] * 9
-                                solution_path = result["path"]
-                                solving = True
-                                step = 0
-                                step_count = 0
-                                expansions = result["nodes_expanded"]
-                                elapsed = 0.001
-                                algorithm_results.append(("Backtracking", elapsed, expansions))
-
-                                print(f"Đã sinh trạng thái hợp lệ bằng CSP. Đã mở rộng {expansions} node.")
-
-                                # Animate the solution path step by step
-                                for state in solution_path:
-                                    if isinstance(state, list) and len(state) == 3:
-                                        start_state = [num for row in state for num in row]
-                                        if 0 not in start_state:
-                                            start_state.append(0)  # Safeguard to ensure 0 is present
-                                        draw_board(start_state, editing_state)
-                                        pygame.display.flip()
-                                        pygame.time.delay(500)  # Delay for animation
-
-                                # Display the final solution
-                                if result["solution"]:
-                                    start_state = [num for row in result["solution"] for num in row]
-                                    if 0 not in start_state:
-                                        start_state.append(0)  # Safeguard to ensure 0 is present
-                                    draw_board(start_state, editing_state)
-                                    pygame.display.flip()
-                            else:
-                                print("Không thể sinh trạng thái hợp lệ bằng Backtracking CSP.")
-                            # Removed the return statement to prevent premature exit
-                            solving = False  # Ensure solving is set to False if no solution is found
-
                         # Xử lý các thuật toán còn lại
                         # Tự động điền nếu còn thiếu đúng 1 số
                         filled = [x for x in input_state if x is not None]
@@ -216,8 +236,8 @@ def main():
                                 step_count = 0
                                 expansions = result["nodes_expanded"]
                                 elapsed = 0.001
-                                algorithm_results.append(("Backtracking", elapsed, expansions))
-
+                                algorithm_results.append(("Backtracking", elapsed, expansions,expansions ))
+                                last_run_algorithm_name = selected_algorithm_name
                                 print(f"Đã sinh trạng thái hợp lệ bằng CSP. Đã mở rộng {expansions} node.")
 
                                 # Animate the solution path step by step
@@ -247,6 +267,7 @@ def main():
                             step = 0
                             if solution:
                                 algorithm_results.append(("Genetic", 0.001, len(solution)))
+                                last_run_algorithm_name = selected_algorithm_name
                             if solution is None:
                                 solving = False
                                 selected_algorithm_name += " (No Solution)"
@@ -254,22 +275,37 @@ def main():
                         elif selected_algorithm_name == "Q-Learning":
                             solving = True
                             print("Đang chạy thuật toán Q-Learning...")
-                            # Giới hạn số tập huấn luyện để không mất quá nhiều thời gian
-                            solution = q_learning_solve(start_state, episodes=5000, alpha=0.1, gamma=0.9, epsilon=0.2)
+
+                            start = time.time()
+                            solution, expansions = q_learning_solve(start_state, episodes=5000, alpha=0.1, gamma=0.9, epsilon=0.2)
+                            elapsed = time.time() - start
+
                             step = 0
+                            step_count = 0 
                             if solution:
-                                algorithm_results.append(("Q-Learning", 0.001, len(solution)))
-                            if solution is None:
+                                algorithm_results.append(("Q-Learning", elapsed, expansions, len(solution) if solution else 0))
+                                last_run_algorithm_name = selected_algorithm_name
+                                 # ✅ Ghi lại log bước đi
+                                solution_log = []
+                                temp_state = start_state[:]
+                                solution_log.append(temp_state[:])
+                                for zero, swap in solution:
+                                    temp_state[zero], temp_state[swap] = temp_state[swap], temp_state[zero]
+                                    solution_log.append(temp_state[:])
+                                print(f"✅ Q-Learning hoàn tất trong {elapsed:.4f} giây, {expansions} bước.")
+                            else:
                                 solving = False
                                 selected_algorithm_name += " (No Solution)"
-                                print(f"Không tìm thấy giải pháp cho trạng thái: {start_state}")
+                                print(f"❌ Không tìm thấy giải pháp cho trạng thái: {start_state}")
+
     
                         elif selected_algorithm_name == "Const Checking":
                             solving = True
                             result = constraint_checking_solve()
                             if result and result['solution']:
                                 solution_path = result['path']
-                                algorithm_results.append(("Const Checking", 0.001, result["nodes_expanded"]))
+                                algorithm_results.append(("Const Checking", 0.001, result["nodes_expanded"], len(solution_path)))
+                                last_run_algorithm_name = selected_algorithm_name
                                 step = 0
                                 step_count = 0
 
@@ -287,25 +323,44 @@ def main():
                         elif selected_algorithm_name == "And-Or Search":
                             solving = True
                             print("Đang chạy thuật toán And-Or Tree Search...")
-                            belief_states = [tuple(start_state)]
-                            plan = and_or_search(belief_states, max_depth=30)
+
+                            start = time.time()
+                            plan, expansions = and_or_search(tuple(start_state), max_depth=30)
+                            elapsed_time = time.time() - start
+
+                            last_run_algorithm_name = selected_algorithm_name
 
                             if plan:
                                 print("Đã tìm được cây kế hoạch:")
                                 print(plan)
 
-                                move_names = extract_moves_from_plan(plan)
-                                if move_names:
-                                    print("Chuỗi hành động:", move_names)
-                                    solution = convert_moves_to_indices(start_state, move_names)
+                                solution = extract_moves_from_plan(plan)
+
+                                if solution:
+                                    print("✅ Đã trích xuất bước đi từ cây kế hoạch:")
+                                    print(solution)
+
                                     step = 0
+                                    step_count = 0  # ✅ Đếm từ 0 khi bắt đầu thực hiện giải
+                                    algorithm_results.append(("And-Or", elapsed_time, expansions, len(solution)))  # ✅ Đếm tổng bước vào bảng
+                                    elapsed = elapsed_time
+                                    # ✅ Gán lại log đúng từ trạng thái ban đầu
+                                    temp_state = start_state[:]
+                                    solution_log = [temp_state[:]]
+                                    for zero_idx, new_idx in solution:
+                                        temp_state[zero_idx], temp_state[new_idx] = temp_state[new_idx], temp_state[zero_idx]
+                                        solution_log.append(temp_state[:])
                                 else:
                                     solving = False
-                                    print("Không thể trích xuất được hành động từ cây kế hoạch.")
+                                    print("❌ Không thể trích xuất bước đi từ cây kế hoạch.")
+                                    algorithm_results.append(("And-Or", elapsed_time, expansions, 0))
                             else:
                                 solving = False
                                 selected_algorithm_name += " (No Solution)"
                                 print("Không tìm được lời giải với thuật toán And-Or.")
+                                algorithm_results.append(("And-Or", elapsed_time, expansions, 0))
+
+
                         elif selected_algorithm_name == "No Observation Search":
                             solving = True
                             print("🔍 Đang chạy thuật toán No Observation Search...")
@@ -317,6 +372,8 @@ def main():
                                 print("❌ Không tìm được lời giải với No Observation Search.")
                             else:
                                 print(f"✅ Đã tìm thấy chuỗi hành động ({len(solution)} bước):")
+                                algorithm_results.append(("No Observation", 0.001, len(solution), len(solution)))
+                                last_run_algorithm_name = selected_algorithm_name
                                 print(solution)
                         
                         elif selected_algorithm_name == "Partial Obser":
@@ -327,7 +384,8 @@ def main():
                             goal_set = {tuple([1, 2, 3, 4, 5, 6, 7, 8, 0])}
                             solution, expansions = partial_observable_search(start_set, goal_set)
                             elapsed = 0.001  # nếu bạn không đo thời gian cụ thể
-                            algorithm_results.append(("Partial Obser", elapsed, expansions))
+                            algorithm_results.append(("Partial Obser", elapsed, expansions, len(solution) if solution else 0))
+                            last_run_algorithm_name = selected_algorithm_name
                             step = 0
 
                             if solution is None:
@@ -356,6 +414,33 @@ def main():
                                     real_steps.append((zero_idx, new_idx))
                                 solution = real_steps  # Gán lại cho đúng định dạng GUI đang cần
 
+                        elif selected_algorithm_name == "TD Learning":
+                            solving = True
+                            print("Đang chạy thuật toán TD Learning...")
+
+                            start = time.time()
+                            solution, expansions = td_learning_solve(start_state, episodes=5000, alpha=0.2, gamma=0.9, epsilon=0.3)
+                            elapsed = time.time() - start
+
+                            step = 0
+                            step_count = 0
+
+                            if solution:
+                                algorithm_results.append(("TD Learning", elapsed, expansions, len(solution)))
+                                last_run_algorithm_name = selected_algorithm_name
+                                 # ✅ Ghi lại log bước đi
+                                solution_log = []
+                                temp_state = start_state[:]
+                                solution_log.append(temp_state[:])
+                                for zero, swap in solution:
+                                    temp_state[zero], temp_state[swap] = temp_state[swap], temp_state[zero]
+                                    solution_log.append(temp_state[:])
+                                print(f"✅ TD Learning hoàn tất trong {elapsed:.4f} giây, mở rộng {expansions} bước.")
+                            else:
+                                solving = False
+                                selected_algorithm_name += " (No Solution)"
+                                print("❌ Không tìm thấy lời giải với TD Learning.")
+
 
                         elif selected_algorithm_name == "AC3":
                             solving = True
@@ -379,7 +464,8 @@ def main():
                                 step_count = 0
                                 expansions = result["nodes_expanded"]
                                 elapsed = 0.001
-                                algorithm_results.append(("AC-3", elapsed, expansions))
+                                algorithm_results.append(("AC-3", elapsed, expansions, expansions))
+                                last_run_algorithm_name = selected_algorithm_name
                                 print(f"Generated valid state using AC3. Expanded {expansions} nodes.")
 
                                 # Animate the solution path step by step
@@ -410,14 +496,25 @@ def main():
 
                             # ✅ Gọi và nhận solution, expansions
                             solution, expansions = selected_algorithm(start_state)
-
                             elapsed = time.time() - start
-                            algorithm_results.append((selected_algorithm_name, elapsed, expansions))
+                            if solution:
+                                solution_log = []
+                                temp_state = original_state[:]
+                                solution_log.append(temp_state[:])
 
-                            if solution is None:
+                                for move in solution:
+                                    zero, swap = move
+                                    temp_state[zero], temp_state[swap] = temp_state[swap], temp_state[zero]
+                                    solution_log.append(temp_state[:])
+
+                           
+                                algorithm_results.append((selected_algorithm_name, elapsed, expansions, len(solution)))
+                                last_run_algorithm_name = selected_algorithm_name
+                            else:
                                 solving = False
-                                selected_algorithm_name += " (No Solution)"
-                                print(f"Không tìm thấy giải pháp cho trạng thái: {start_state}")
+                                last_run_algorithm_name = selected_algorithm_name
+                                print(f"❌ Không tìm thấy giải pháp cho trạng thái: {start_state}")
+                                algorithm_results.append((selected_algorithm_name, elapsed, expansions, 0))
 
 
 

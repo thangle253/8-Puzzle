@@ -7,6 +7,7 @@ from utils import generate_random_state, manhattan_distance
 from heapq import heappop, heappush
 from utils import is_solvable
 import pygame
+from itertools import permutations
 
 # Hàm giải thuật BFS (Breadth-First Search): tìm kiếm theo chiều rộng, mở rộng tất cả các trạng thái cùng một mức độ trước khi chuyển sang mức độ tiếp theo
 def bfs_solve(start_state):
@@ -94,8 +95,6 @@ def generic_solve(start_state, queue, pop_method='pop', is_priority=False):
                         queue.append((new_state, path + [(zero_idx, new_idx)]))
 
     return None, len(visited)
-
-
 
 # Hàm giải thuật UCS (Uniform Cost Search): mở rộng các trạng thái theo thứ tự tổng chi phí nhỏ nhất từ trạng thái ban đầu đến trạng thái hiện tại.
 def ucs_solve(start_state):
@@ -186,15 +185,16 @@ def astar_solve(start_state):
 def idastar_solve(start_state):
     goal_state = list(range(1, 9)) + [0]  # Trạng thái đích
 
-    def search(state, path, g, threshold, visited):
+    def search(state, path, g, threshold, visited, expansions):
+        expansions[0] += 1  # Đếm node mở rộng
         f = g + manhattan_distance(state)  # f(n) = g(n) + h(n)
-        # Nếu f vượt ngưỡng, trả về ngưỡng mới
-        if f > threshold:
-            return f, None 
-        if state == goal_state:
-            return f, path  # Tìm thấy lời giải
 
-        min_threshold = float('inf') # Ngưỡng nhỏ nhất
+        if f > threshold:
+            return f, None
+        if state == goal_state:
+            return f, path
+
+        min_threshold = float('inf')
         zero_idx = state.index(0)
         moves = [-3, 3, -1, 1]
 
@@ -206,160 +206,155 @@ def idastar_solve(start_state):
 
                 if tuple(new_state) not in visited:
                     visited.add(tuple(new_state))
-                    new_threshold, result = search(new_state, path + [(zero_idx, new_idx)], g + 1, threshold, visited)
+                    new_threshold, result = search(new_state, path + [(zero_idx, new_idx)], g + 1, threshold, visited, expansions)
                     visited.remove(tuple(new_state))
-                    
+
                     if result is not None:
-                        return new_threshold, result  # Nếu tìm thấy lời giải, trả về ngay
+                        return new_threshold, result
                     min_threshold = min(min_threshold, new_threshold)
 
-        return min_threshold, None  # Trả về giá trị ngưỡng mới
-     
-    # Bắt đầu với ngưỡng ban đầu là heuristic của trạng thái ban đầu
-    threshold = manhattan_distance(start_state)  # Bắt đầu với h(n)
-    
+        return min_threshold, None
+
+    threshold = manhattan_distance(start_state)
+    expansions = [0]  # Dùng list để tham chiếu
+
     while True:
         visited = set([tuple(start_state)])
-        threshold, solution = search(start_state, [], 0, threshold, visited) # Lặp lại tìm kiếm, tăng dần ngưỡng
+        new_threshold, solution = search(start_state, [], 0, threshold, visited, expansions)
         if solution is not None:
-            return solution  # Nếu tìm thấy lời giải, trả về
-        if threshold == float('inf'):
-            return None  # Không tìm thấy lời giải
+            return solution, expansions[0]
+        if new_threshold == float('inf'):
+            return None, expansions[0]
+        threshold = new_threshold
 
 # Hàm giải thuật Hill Climbing: tìm kiếm theo chiều cao, mở rộng trạng thái tốt nhất tại mỗi bước
 def hill_climbing_solve(start_state):
     goal_state = list(range(1, 9)) + [0]
     current_state = start_state[:]
     path = []
-    
+    expansions = 0  # ✅ Số node đã đánh giá (mỗi lần tính heuristic cho 1 hàng xóm)
+
     while current_state != goal_state:
-        # Tìm vị trí ô trống
         zero_idx = current_state.index(0)
-        
-        # Khởi tạo giá trị heuristic tốt nhất
-        best_heuristic = manhattan_distance(current_state) # Tính toán heuristic cho trạng thái hiện tại
-        best_move = None # Tìm bước đi tốt nhất
-        
-        # Các hướng di chuyển
-        moves = [-3, 3, -1, 1]
-        
+        best_heuristic = manhattan_distance(current_state)
+        best_move = None
+
+        moves = [-3, 3, -1, 1]  # lên, xuống, trái, phải
+
         for move in moves:
             new_idx = zero_idx + move
             # Kiểm tra di chuyển hợp lệ
-            if 0 <= new_idx < 9 and ((move in [-1, 1] and zero_idx // 3 == new_idx // 3) or (move in [-3, 3])):
+            if 0 <= new_idx < 9 and (
+                (move in [-1, 1] and zero_idx // 3 == new_idx // 3) or
+                (move in [-3, 3])
+            ):
                 # Tạo trạng thái mới
                 new_state = current_state[:]
                 new_state[zero_idx], new_state[new_idx] = new_state[new_idx], new_state[zero_idx]
-                
-                # Tính heuristic của trạng thái mới
                 new_heuristic = manhattan_distance(new_state)
-                
-                # Chọn trạng thái có heuristic tốt hơn (nhỏ hơn)
+
+                expansions += 1  # ✅ Mỗi trạng thái hàng xóm được đánh giá là 1 expansion
+
+                # Nếu trạng thái tốt hơn thì chọn
                 if new_heuristic < best_heuristic:
                     best_heuristic = new_heuristic
                     best_move = (zero_idx, new_idx)
-        
-        # Nếu không tìm được bước đi tốt hơn, kết thúc
+
+        # Nếu không tìm được trạng thái tốt hơn → kẹt local max
         if best_move is None:
-            return None
-        
-        # Thực hiện di chuyển   
+            return None, expansions
+
+        # Di chuyển đến trạng thái tốt hơn
         zero_idx, new_idx = best_move
         current_state[zero_idx], current_state[new_idx] = current_state[new_idx], current_state[zero_idx]
         path.append(best_move)
-    
-    return path, len(path) if path else 0
 
+    return path, expansions
 
 # Hàm giải thuật Steepest Ascent Hill Climbing: tìm kiếm theo chiều cao với bước đi tốt nhất tại mỗi bước
 def steepest_ascent_hill_climbing_solve(start_state):
     goal_state = list(range(1, 9)) + [0]
     current_state = start_state[:]
     path = []
-    
+    expansions = 0  # ✅ Số node đã đánh giá (gọi manhattan_distance)
+
     while current_state != goal_state:
-        # Tìm vị trí ô trống
         zero_idx = current_state.index(0)
-        
-        # Khởi tạo giá trị heuristic tốt nhất
         best_heuristic = manhattan_distance(current_state)
         best_moves = []
-        
-        # Các hướng di chuyển
+
         moves = [-3, 3, -1, 1]
-        
+
         for move in moves:
             new_idx = zero_idx + move
-            # Kiểm tra di chuyển hợp lệ
-            if 0 <= new_idx < 9 and ((move in [-1, 1] and zero_idx // 3 == new_idx // 3) or (move in [-3, 3])):
-                # Tạo trạng thái mới
+            if 0 <= new_idx < 9 and (
+                (move in [-1, 1] and zero_idx // 3 == new_idx // 3) or
+                (move in [-3, 3])
+            ):
                 new_state = current_state[:]
                 new_state[zero_idx], new_state[new_idx] = new_state[new_idx], new_state[zero_idx]
                 
-                # Tính heuristic của trạng thái mới
                 new_heuristic = manhattan_distance(new_state)
-                
-                # Lưu tất cả các bước đi có heuristic tốt nhất
+                expansions += 1  # ✅ Mỗi lần đánh giá trạng thái là 1 node mở rộng
+
                 if new_heuristic < best_heuristic:
                     best_heuristic = new_heuristic
                     best_moves = [(zero_idx, new_idx)]
                 elif new_heuristic == best_heuristic:
                     best_moves.append((zero_idx, new_idx))
-        
-        # Nếu không tìm được bước đi tốt hơn, kết thúc
+
         if not best_moves:
-            return None
-        
-        # Chọn ngẫu nhiên một trong các bước đi tốt nhất nếu có nhiều hơn một
-        zero_idx, new_idx = best_moves[0] if len(best_moves) == 1 else best_moves[len(best_moves) // 2]  
-        
-        # Thực hiện di chuyển   
+            return None, expansions  # ✅ Trả về số node đã mở rộng dù thất bại
+
+        # Chọn một bước ngẫu nhiên trong các bước tốt nhất
+        selected_move = best_moves[0] if len(best_moves) == 1 else best_moves[len(best_moves) // 2]
+        zero_idx, new_idx = selected_move
+
         current_state[zero_idx], current_state[new_idx] = current_state[new_idx], current_state[zero_idx]
         path.append((zero_idx, new_idx))
-    
-    return path, len(path) if path else 0
+
+    return path, expansions
 
 
 # Hàm giải thuật Hill Climbing với ngẫu nhiên
 def stochastic_hill_climbing_solve(start_state):
+    import random
     goal_state = list(range(1, 9)) + [0]
     current_state = start_state[:]
     path = []
+    expansions = 0  # ✅ Số node được đánh giá bằng heuristic
 
     while current_state != goal_state:
-        # Tìm vị trí ô trống
         zero_idx = current_state.index(0)
-
-        # Tạo danh sách các trạng thái lân cận
         neighbors = []
-        moves = [-3, 3, -1, 1]  # Lên, Xuống, Trái, Phải
+        moves = [-3, 3, -1, 1]
 
         for move in moves:
             new_idx = zero_idx + move
-            # Kiểm tra di chuyển hợp lệ
-            if 0 <= new_idx < 9 and ((move in [-1, 1] and zero_idx // 3 == new_idx // 3) or (move in [-3, 3])):
-                # Tạo trạng thái mới
+            if 0 <= new_idx < 9 and (
+                (move in [-1, 1] and zero_idx // 3 == new_idx // 3) or
+                (move in [-3, 3])
+            ):
                 new_state = current_state[:]
                 new_state[zero_idx], new_state[new_idx] = new_state[new_idx], new_state[zero_idx]
-                neighbors.append((new_state, (zero_idx, new_idx)))
+                h = manhattan_distance(new_state)
+                expansions += 1  # ✅ Mỗi trạng thái được đánh giá
+                neighbors.append((new_state, (zero_idx, new_idx), h))
 
         # Lọc các trạng thái lân cận tốt hơn
-        better_neighbors = [
-            (state, move) for state, move in neighbors if manhattan_distance(state) < manhattan_distance(current_state)
-        ]
+        current_h = manhattan_distance(current_state)
+        better_neighbors = [(state, move) for state, move, h in neighbors if h < current_h]
 
-        # Nếu không có trạng thái tốt hơn, dừng lại
         if not better_neighbors:
-            return None
+            return None, expansions  # ✅ Trả về cả số node mở rộng
 
         # Chọn ngẫu nhiên một trạng thái tốt hơn
         next_state, move = random.choice(better_neighbors)
 
-        # Cập nhật trạng thái hiện tại
         current_state = next_state
         path.append(move)
 
-    return path, len(path) if path else 0
+    return path, expansions
 
 
 # Hàm giải thuật Simulated Annealing
@@ -367,71 +362,62 @@ def simulated_annealing_solve(start_state):
     state = start_state[:]
     path = []
     goal = list(range(1, 9)) + [0]
-    T = 200.0 # Nhiệt độ ban đầu
-    alpha = 0.99 # Hệ số làm mát
-    min_temp = 0.1 # Nhiệt độ tối thiểu
+
+    T = 400.0          # 🔥 Nhiệt độ ban đầu
+    alpha = 0.999       # 🔽 Làm nguội nhanh
+    min_temp = 0.1     # ❄️ Nhiệt độ tối thiểu
+    expansions = 0     # ✅ Số node mở rộng
 
     while True:
         if state == goal:
-            return path, len(path) if path else 0
-
+            return path, expansions
 
         zero_idx = state.index(0)
         moves = [-3, 3, -1, 1]
-        best_h = manhattan_distance(state)
-        best_move = None
-        best_state = None
-
+        current_h = manhattan_distance(state)
         neighbors = []
 
         for move in moves:
             new_idx = zero_idx + move
             if 0 <= new_idx < 9 and (
-                (move in [-1, 1] and zero_idx // 3 == new_idx // 3) or (move in [-3, 3])
+                (move in [-1, 1] and zero_idx // 3 == new_idx // 3) or
+                (move in [-3, 3])
             ):
                 temp = state[:]
                 temp[zero_idx], temp[new_idx] = temp[new_idx], temp[zero_idx]
                 h = manhattan_distance(temp)
+                expansions += 1
                 neighbors.append((temp, (zero_idx, new_idx), h))
 
-                if h < best_h:
-                    best_h = h
-                    best_move = move
-                    best_state = temp
+        if not neighbors:
+            break
 
-        if best_move:
-            # Có hướng tốt hơn → đi theo HC
-            state = best_state
-            path.append((zero_idx, zero_idx + best_move))
-        else:
-            # Không có hướng đi tốt hơn → dùng SA để thoát
-            if not neighbors:
-                break
-            next_state, move, h = random.choice(neighbors)
-            delta_e = manhattan_distance(state) - h # Tính toán độ thay đổi heuristic
-            if delta_e > 0 or random.random() < math.exp(delta_e / T): # Xác suất chấp nhận trạng thái xấu hơn
-                state = next_state
-                path.append(move)
+        next_state, move, h = random.choice(neighbors)
+        delta_e = current_h - h
 
-            T *= alpha # Giảm nhiệt độ dần theo thời gia/n
-            if T < min_temp:
-                break
+        if delta_e > 0 or random.random() < math.exp(delta_e / T):
+            state = next_state
+            path.append(move)
 
-    return path if state == goal else None
+        T *= alpha
+        if T < min_temp:
+            break
+
+    return (path, expansions) if state == goal else (None, expansions)
 
 # Hàm giải thuật Beam Search
-def beam_search_solve(start_state, beam_width=2):
+def beam_search_solve(start_state, beam_width=9):
     goal_state = list(range(1, 9)) + [0]
     queue = [(manhattan_distance(start_state), start_state, [])]
     visited = set()
+    expansions = 0  # ✅ Số node mở rộng
 
     while queue:
-        # Giữ lại beam_width trạng thái tốt nhất
         next_level = []
 
-        for _, state, path in queue: #_ là giá trị heuristic cần dùng đến
+        for _, state, path in queue:
             if state == goal_state:
-                return path, len(path) if path else 0
+                return path, expansions
 
             visited.add(tuple(state))
             zero_idx = state.index(0)
@@ -440,7 +426,8 @@ def beam_search_solve(start_state, beam_width=2):
             for move in moves:
                 new_idx = zero_idx + move
                 if 0 <= new_idx < 9 and (
-                    (move in [-1, 1] and zero_idx // 3 == new_idx // 3) or (move in [-3, 3])
+                    (move in [-1, 1] and zero_idx // 3 == new_idx // 3) or
+                    (move in [-3, 3])
                 ):
                     new_state = state[:]
                     new_state[zero_idx], new_state[new_idx] = new_state[new_idx], new_state[zero_idx]
@@ -449,76 +436,67 @@ def beam_search_solve(start_state, beam_width=2):
                         new_path = path + [(zero_idx, new_idx)]
                         h = manhattan_distance(new_state)
                         heappush(next_level, (h, new_state, new_path))
+                        expansions += 1  # ✅ Tăng khi tạo node hợp lệ mới
 
-        # Chọn beam_width trạng thái tốt nhất để tiếp tục
         queue = [heappop(next_level) for _ in range(min(beam_width, len(next_level)))]
 
-    return None  # Không tìm thấy lời giải
+    return None, expansions  # ✅ Trả về số node mở rộng kể cả khi fail
 
-def and_or_search(belief_states, max_depth=20):
-    goal_state = tuple([1, 2, 3, 4, 5, 6, 7, 8, 0])
+# Hàm giải thuật AND-OR Search: tìm kiếm theo chiều sâu với các trạng thái AND và OR
+def and_or_search(start, goal=(1, 2, 3, 4, 5, 6, 7, 8, 0), max_depth=50):
+    expansions = 0
+    visited = set()  # ✅ Để đảm bảo không đếm lại node đã mở rộng
 
-    def is_goal(beliefs):
-        return all(state == goal_state for state in beliefs)
+    def goal_test(state):
+        return state == goal
 
-    actions = ['UP', 'DOWN', 'LEFT', 'RIGHT']
-    move_offsets = {
-        'UP': -3,
-        'DOWN': 3,
-        'LEFT': -1,
-        'RIGHT': 1
-    }
-
-    def apply_action(state, action):
+    def get_neighbors(state):
+        neighbors = []
         zero_idx = state.index(0)
-        move = move_offsets[action]
-        new_idx = zero_idx + move
-        if 0 <= new_idx < 9 and (
-            (action in ['LEFT', 'RIGHT'] and zero_idx // 3 == new_idx // 3) or
-            (action in ['UP', 'DOWN'])
-        ):
-            s = list(state)
-            s[zero_idx], s[new_idx] = s[new_idx], s[zero_idx]
-            return tuple(s)
+        row, col = divmod(zero_idx, 3)
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # UP, DOWN, LEFT, RIGHT
+
+        for dr, dc in directions:
+            nr, nc = row + dr, col + dc
+            if 0 <= nr < 3 and 0 <= nc < 3:
+                new_idx = nr * 3 + nc
+                new_state = list(state)
+                new_state[zero_idx], new_state[new_idx] = new_state[new_idx], new_state[zero_idx]
+                neighbors.append(tuple(new_state))
+        return neighbors
+
+    def results(state, action_state):
+        return [action_state]  # môi trường xác định
+
+    def or_search(state, path, depth):
+        nonlocal expansions
+        if goal_test(state):
+            return [state]
+        if state in path or depth > max_depth:
+            return None
+        if state not in visited:
+            expansions += 1
+            visited.add(state)
+
+        for neighbor in get_neighbors(state):
+            if neighbor not in path:
+                plan = and_search(results(state, neighbor), path + [state], depth + 1)
+                if plan:
+                    return [state] + plan
         return None
 
-    def or_search(beliefs, depth, visited):
-        if is_goal(beliefs):
-            return "GOAL"
-        if depth >= max_depth:
-            return None
+    def and_search(states, path, depth):
+        full_plan = []
+        for s in states:
+            plan = or_search(s, path, depth)
+            if plan is None:
+                return None
+            full_plan.extend(plan[1:] if full_plan else plan)
+        return full_plan
 
-        frozen_beliefs = frozenset(beliefs)
-        if frozen_beliefs in visited:
-            return None
-        visited.add(frozen_beliefs)
+    plan = or_search(start, [], 0)
+    return (plan, expansions) if plan else (None, expansions)
 
-        for action in actions:
-            new_beliefs = set()
-            for state in beliefs:
-                result = apply_action(state, action)
-                if result:
-                    new_beliefs.add(result)
-
-            if not new_beliefs:
-                continue
-
-            subplans = []
-            for b in new_beliefs:
-                subplan = or_search({b}, depth + 1, visited.copy())
-                if subplan is None:
-                    break
-                subplans.append(subplan)
-            else:
-                return {action: subplans}
-
-        return None
-
-    return or_search(set(belief_states), 0, set())
-
-
-from itertools import permutations
-from collections import deque
 
 def no_observation_search(start_state=None):
     goal_state = tuple([1, 2, 3, 4, 5, 6, 7, 8, 0])
@@ -587,7 +565,6 @@ def no_observation_search(start_state=None):
                 queue.append((new_belief, path + [(zero, idx2)]))
 
     return None
-
 
 # Hàm giải thuật Partial Observable Search (Belief State Search): tìm kiếm với trạng thái "quan sát được" một số ô trên bảng (1,2,3)
 def partial_observable_search(start_set, goal_set):
@@ -1449,188 +1426,199 @@ def ac3_solve():
         }
 
 # Hàm giải thuật Genetic Algorithm: giải 8-puzzle sử dụng thuật toán di truyền
-def genetic_algorithm_solve(start_state, population_size=200, max_generations=500, mutation_rate=0.1, timeout=50):
+def genetic_algorithm_solve(start_state, population_size=200, max_generations=500, mutation_rate=0.1, timeout=30):
     goal_state = list(range(1, 9)) + [0]
     if start_state == goal_state:
-        return []
-
+        return [], 0
     if not is_solvable(start_state):
-        print("Trạng thái không thể giải được!")
-        return None
+        return None, 0
 
-    # Các bước di chuyển: lên, xuống, trái, phải
     move_map = [-3, 3, -1, 1]
 
-    # Hàm tạo cá thể mới bằng cách sinh ngẫu nhiên lengthh bước đi
-    def create_individual(length=100):
-        return [random.randint(0, 3) for _ in range(length)]
+    def create_individual(length=60):
+        # Tạo chuỗi hành động ngẫu nhiên, tránh lặp ngược
+        ind = []
+        last = None
+        for _ in range(length):
+            move = random.randint(0, 3)
+            while last is not None and abs(move_map[move]) == abs(move_map[last]):
+                move = random.randint(0, 3)
+            ind.append(move)
+            last = move
+        return ind
 
-    # Áp dụng chuỗi bước đi lên trạng thái
     def apply_moves(state, moves):
         s = state[:]
-        valid_path = [] # Lưu lại các bước đi hợp lệ
-        last_move = None # Tránh lặp lại hướng ngược
-
+        valid_path = []
+        last_move = None
         for move in moves:
             zero = s.index(0)
             new_zero = zero + move_map[move]
-
-            # Không đi ngược lại bước trước
             if last_move is not None and abs(move_map[move]) == abs(move_map[last_move]):
                 continue
-
             if 0 <= new_zero < 9:
                 if move in [2, 3] and zero // 3 != new_zero // 3:
-                    continue  # Tránh đi trái/phải mà vượt ra khỏi hàng
-                s[zero], s[new_zero] = s[new_zero], s[zero]
-                valid_path.append((zero, new_zero))
+                    continue
+                s[zero], s[new_zero] = s[new_new := new_zero], s[zero]
+                valid_path.append((zero, new_new))
                 last_move = move
         return s, valid_path
-    # Hàm tính điểm fitness cho cá thể dựa vào hàm Manhattan
-    # Càng gần goal(khoảng cách Manhattan càng nhỏ) thì điểm càng cao
-    # Càng ngắn thì tốt hơn -> trừ điểm 0.1 cho mỗi bước đi
+
     def fitness(state, path):
-        dist = manhattan_distance(state) 
-        return 1000 - dist - 0.1 * len(path) # Trừ điểm cho mỗi bước đi
-    
-    # Hàm lai ghép 2 cá thể để tạo ra cá thể mới
+        dist = manhattan_distance(state)
+        if state == goal_state:
+            return 10_000 - len(path) * 2  # 🎯 Thưởng cực lớn nếu đạt goal
+        return 1000 - dist - 0.5 * len(path)  # 🧠 Phạt nặng nếu đi vòng
+
+    def tournament_selection(scored, k=5):
+        group = random.sample(scored, k)
+        return max(group, key=lambda x: x[0])[1]  # genome
+
     def crossover(p1, p2):
-        point = random.randint(1, min(len(p1), len(p2)) - 1) # Chọn ngẫu nhiên điểm cắt của p1 để trộn với p2
+        point = random.randint(1, min(len(p1), len(p2)) - 1)
         return p1[:point] + p2[point:]
 
-    # Hàm đột biến cá thể với xác suất rate - tức thay đổi ngẫu nhiên một bước đi trong cá thể
     def mutate(ind, rate):
         return [random.randint(0, 3) if random.random() < rate else m for m in ind]
 
-    # Khởi tạo quần thể ban đầu
     population = [create_individual() for _ in range(population_size)]
-    # Biến theo dõi cá thể tốt nhất
     best_score = float('-inf')
     best_path = []
+    expansions = 0
+    generations_no_improve = 0
 
     start = time.time()
     for gen in range(max_generations):
         if time.time() - start > timeout:
-            print("Hết thời gian!")
             break
 
         scored = []
-        # Chạy mỗi bước lên start state, tính điểm và lưu lại -> đánh giá tất cả cá thể
+        found_goal = False
         for ind in population:
             final_state, path = apply_moves(start_state, ind)
+            expansions += 1
             score = fitness(final_state, path)
             scored.append((score, ind, path, final_state))
             if final_state == goal_state:
-                print(f"Tìm thấy lời giải tại thế hệ {gen}")
-                return path
+                return path, expansions
 
         scored.sort(reverse=True)
-        population = [ind for _, ind, _, _ in scored[:population_size // 4]]  #Giữ lại top 25% cá thể tốt nhất
 
-        # Lai ghép và đột biến để tạo child
-        while len(population) < population_size:
-            p1 = random.choice(scored)[1]
-            p2 = random.choice(scored)[1]
+        # Giữ elite
+        elites = scored[:population_size // 10]
+        next_gen = [ind for _, ind, _, _ in elites]
+
+        # Tạo thế hệ mới
+        while len(next_gen) < population_size:
+            p1 = tournament_selection(scored)
+            p2 = tournament_selection(scored)
             child = mutate(crossover(p1, p2), mutation_rate)
-            population.append(child)
+            next_gen.append(child)
 
-        # Cập nhật cá thể tốt nhất
+        population = next_gen
+
+        # Theo dõi best path
         if scored[0][0] > best_score:
             best_score = scored[0][0]
             best_path = scored[0][2]
+            generations_no_improve = 0
+        else:
+            generations_no_improve += 1
+
+        # Nếu không cải thiện sau 50 thế hệ → restart nhẹ
+        if generations_no_improve >= 50:
+            print(f"🌀 Restart tại thế hệ {gen} do không cải thiện.")
+            population = [create_individual() for _ in range(population_size)]
+            generations_no_improve = 0
 
         if gen % 10 == 0:
-            print(f"🔁 Thế hệ {gen}, điểm tốt nhất: {int(best_score)}")
+            print(f"📈 Gen {gen}: điểm tốt nhất {int(best_score)}")
 
-    print("Không tìm được trạng thái goal. Trả về đường đi tốt nhất.")
-    return best_path, len(best_path) if best_path else (None, 0)
+    return best_path if best_path else None, expansions
 
 # Hàm giải thuật Q-Learning: giải 8-puzzle sử dụng thuật toán học tăng cường
-def q_learning_solve(start_state, episodes=5000, alpha=0.1, gamma=0.9, epsilon=0.2):
-    import random
-    from collections import defaultdict
 
-    goal_state = tuple([1, 2, 3, 4, 5, 6, 7, 8, 0])
-    # Bước 1: Khởi tạo Q-table và điền các giá trị ban đầu
-    Q = defaultdict(lambda: [0, 0, 0, 0])  # Q(s,a) với 4 hành động: up, down, left, right
-    actions = [(-3, 0), (3, 1), (-1, 2), (1, 3)]  # (di chuyển, chỉ số hành động)
+def q_learning_solve(start_state, episodes=10000, alpha=0.1, gamma=0.95, epsilon=0.3, max_steps=5000):
+    goal_state = (1, 2, 3, 4, 5, 6, 7, 8, 0)
 
-    # Hàm xác định hành động hợp lệ từ trạng thái hiện tại
     def get_valid_actions(state):
         zero = state.index(0)
-        valid = []
-        for move, idx in actions:
-            new_zero = zero + move
-            if 0 <= new_zero < 9:
-                if abs(zero % 3 - new_zero % 3) + abs(zero // 3 - new_zero // 3) == 1:
-                    valid.append((move, idx))
-        return valid
+        r, c = divmod(zero, 3)
+        actions = []
+        if r > 0: actions.append("up")
+        if r < 2: actions.append("down")
+        if c > 0: actions.append("left")
+        if c < 2: actions.append("right")
+        return actions
 
-    # Hàm hoán đổi vị trí của ô trống (0) với ô bên cạnh -> trả về trạng thái mới
-    def step(state, move):
+    def take_action(state, action):
         zero = state.index(0)
-        new_zero = zero + move
-        new_state = list(state)
-        new_state[zero], new_state[new_zero] = new_state[new_zero], new_state[zero]
-        return tuple(new_state)
+        r, c = divmod(zero, 3)
+        moves = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
+        dr, dc = moves[action]
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < 3 and 0 <= nc < 3:
+            idx2 = nr * 3 + nc
+            new_state = list(state)
+            new_state[zero], new_state[idx2] = new_state[idx2], new_state[zero]
+            return tuple(new_state), (zero, idx2)
+        return state, None
 
-    # Bước 2: Vòng lặp học theo số lượng episode
+    # Khởi tạo bảng Q
+    Q = dict()
+    start_state = tuple(start_state)
+
     for ep in range(episodes):
-        state = tuple(start_state)
-
-        for _ in range(100):  # Tối đa 50 bước mỗi episode
-            # Bước 3: Chọn tác nhân thực hiện hành động lên trạng thái s(k)
-            valid = get_valid_actions(state)
-            if not valid:
+        state = start_state
+        for step in range(max_steps):
+            actions = get_valid_actions(state)
+            if not actions:
                 break
 
             if random.random() < epsilon:
-                move, a = random.choice(valid)
+                action = random.choice(actions)
             else:
-                best = max(valid, key=lambda m: Q[state][m[1]]) # Chọn hành động tốt nhất dựa trên Q-value
-                move, a = best
+                q_vals = [Q.get((state, a), 0) for a in actions]
+                action = actions[q_vals.index(max(q_vals))]
 
-            # Bước 5: chuyển sang trạng thái mới
-            next_state = step(state, move)
-
-            # Bước 4: tính phần thưởng
+            next_state, _ = take_action(state, action)
             reward = 100 if next_state == goal_state else -1
 
-            # Bước 6: cập nhật Q-value theo công thức
-            max_q_next = max(Q[next_state])
-            Q[state][a] += alpha * (reward + gamma * max_q_next - Q[state][a])
+            next_actions = get_valid_actions(next_state)
+            max_q_next = max([Q.get((next_state, a), 0) for a in next_actions], default=0)
+            td_target = reward + gamma * max_q_next
+            td_error = td_target - Q.get((state, action), 0)
+            Q[(state, action)] = Q.get((state, action), 0) + alpha * td_error
+
+            if next_state == goal_state:
+                break
 
             state = next_state
 
-            # Bước 7: kết thúc nếu đến goal
-            if state == goal_state:
-                break
-
-        # Bước 8: reset môi trường là implicit khi bắt đầu vòng lặp mới
-
-    # Sau khi học xong, giải bằng cách dùng Q-value
+    # Giai đoạn dựng đường đi
     path = []
-    state = tuple(start_state)
+    state = start_state
     visited = set()
+
     for _ in range(50):
-        visited.add(state)
-        valid = get_valid_actions(state)
-        if not valid:
-            break
-
-        best = max(valid, key=lambda m: Q[state][m[1]])
-        move, a = best
-        zero = state.index(0)
-        new_zero = zero + move
-        path.append((zero, new_zero))
-        state = step(state, move)
-        if state in visited:
-            break
         if state == goal_state:
-            return path
+            return path, len(Q)
+        visited.add(state)
 
-    return path, len(path) if state == goal_state else (None, 0)
+        valid_actions = get_valid_actions(state)
+        if not valid_actions:
+            break
 
+        q_vals = [Q.get((state, a), -float("inf")) for a in valid_actions]
+        best_action = valid_actions[q_vals.index(max(q_vals))]
+        next_state, move = take_action(state, best_action)
+        if not move or next_state in visited:
+            break
+
+        path.append(move)
+        state = next_state
+
+    return (path, len(Q)) if state == goal_state else (None, len(Q))
 
 # Hàm giải thuật Constraint Checking: giải 8-puzzle sử dụng thuật toán kiểm tra ràng buộc
 def constraint_checking_solve():
@@ -1715,3 +1703,86 @@ def constraint_checking_solve():
             'nodes_expanded': nodes_expanded[0],
             'path': path
         }
+    
+def td_learning_solve(start_state, episodes=5000, alpha=0.2, gamma=0.9, epsilon=0.3):
+    from collections import defaultdict
+
+    goal_state = tuple([1, 2, 3, 4, 5, 6, 7, 8, 0])
+    V = defaultdict(float)
+    V[goal_state] = 100.0
+    expansions = 0
+
+    def get_valid_actions(state):
+        zero = state.index(0)
+        valid = []
+        actions = [(-3, "up"), (3, "down"), (-1, "left"), (1, "right")]
+        for move, direction in actions:
+            new_idx = zero + move
+            if 0 <= new_idx < 9:
+                if (move == -1 and zero % 3 == 0) or (move == 1 and zero % 3 == 2):
+                    continue
+                if (move == -3 and zero < 3) or (move == 3 and zero > 5):
+                    continue
+                valid.append((zero, new_idx, direction))
+        return valid
+
+    def apply_move(state, move):
+        zero_idx, new_idx, _ = move
+        new_state = list(state)
+        new_state[zero_idx], new_state[new_idx] = new_state[new_idx], new_state[zero_idx]
+        return tuple(new_state)
+
+    def choose_action(state, epsilon):
+        valid_moves = get_valid_actions(state)
+        if not valid_moves:
+            return None
+        if random.random() < epsilon:
+            return random.choice(valid_moves)
+        else:
+            best_value = -float('inf')
+            best_moves = []
+            for move in valid_moves:
+                next_state = apply_move(state, move)
+                if V[next_state] > best_value:
+                    best_value = V[next_state]
+                    best_moves = [move]
+                elif V[next_state] == best_value:
+                    best_moves.append(move)
+            return random.choice(best_moves)
+
+    # Huấn luyện
+    for episode in range(episodes):
+        eps = max(0.05, epsilon * (1 - episode / episodes))
+        state = tuple(start_state)
+        for _ in range(100):
+            move = choose_action(state, eps)
+            if not move:
+                break
+            next_state = apply_move(state, move)
+            reward = 100 if next_state == goal_state else -1
+            td_target = reward + gamma * V[next_state]
+            V[state] += alpha * (td_target - V[state])
+            state = next_state
+            expansions += 1
+            if state == goal_state:
+                break
+
+    # Suy diễn lời giải
+    state = tuple(start_state)
+    path = []
+    visited = set([state])
+    for _ in range(50):
+        if state == goal_state:
+            return path, expansions
+        move = choose_action(state, 0.05)
+        if not move:
+            break
+        zero_idx, new_idx, _ = move
+        path.append((zero_idx, new_idx))
+        state = apply_move(state, move)
+        expansions += 1
+        if state in visited:
+            break
+        visited.add(state)
+
+    return (path, expansions) if state == goal_state else (None, expansions)
