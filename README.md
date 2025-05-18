@@ -419,7 +419,7 @@ Dự án **8-Puzzle Visualizer** là minh chứng rõ ràng cho việc vận d�
 ---
 ## 📺 Video Báo Cáo Dự Án
 
-[![Xem Video Báo Cáo](.jpg)]()
+[![Xem Video Báo Cáo](img/Vid.png)]()
 
 ---
 
@@ -427,8 +427,9 @@ Dự án **8-Puzzle Visualizer** là minh chứng rõ ràng cho việc vận d�
 
 - **Lê Văn Chiến Thắng**  
 - **MSSV:** 23110328  
-- **Môn học:** Trí Tuệ Nhân Tạo  
 - **Trường:** Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)  
+- **Môn học:** Trí Tuệ Nhân Tạo  
+- **Giảng viên hướng dẫn:** TS. Phan Thị Huyền Trang 
 
 ---
 
