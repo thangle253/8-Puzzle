@@ -69,9 +69,9 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 - 📈 **Thống kê kết quả**: Thời gian chạy, số bước thực hiện, số lượng node mở rộng.
 - 💬 **Đánh giá thuật toán**: So sánh các phương pháp dựa trên tốc độ, độ chính xác và mức sử dụng bộ nhớ.
 ---
-## 2. Triển khai thuật toán giải 8-Puzzle
+## 3. Triển khai thuật toán giải 8-Puzzle
 
-### 2.1. Tìm kiếm không sử dụng thông tin (Uninformed Search)
+### 3.1. Tìm kiếm không sử dụng thông tin (Uninformed Search)
 
 #### Đặc điểm bài toán 8-Puzzle
 
@@ -142,7 +142,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 
 ---
 
-### 2.2. Tìm kiếm có thông tin (Informed Search)
+### 3.2. Tìm kiếm có thông tin (Informed Search)
 
 #### Đặc điểm
 
@@ -194,7 +194,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 
 ---
  
-### 2.3. Tìm kiếm có ràng buộc (Constraint Satisfaction Search)
+### 3.3. Tìm kiếm có ràng buộc (Constraint Satisfaction Search)
 
 #### Đặc điểm
 
@@ -245,7 +245,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 
 ---
 
-### 2.4. Tìm kiếm cục bộ (Local Search)
+### 3.4. Tìm kiếm cục bộ (Local Search)
 
 #### Đặc điểm
 
@@ -308,7 +308,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 
 ---
 
-### 2.5. Tìm kiếm trong môi trường phức tạp (Complex Environments)
+### 3.5. Tìm kiếm trong môi trường phức tạp (Complex Environments)
 
 #### Đặc điểm
 
@@ -353,7 +353,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 
 ---
 
-### 2.6. Học tăng cường (Reinforcement Learning)
+### 3.6. Học tăng cường (Reinforcement Learning)
 
 #### Đặc điểm
 
@@ -393,17 +393,6 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 
 ---
 
-## 3. 🚀 Cách chạy chương trình
-
-```bash
-# Cài đặt các thư viện cần thiết
-pip install pygame
-
-# Chạy ứng dụng
-python main.py
-```
----
-
 ## 4. Kết luận
 
 Dự án **8-Puzzle Visualizer** là minh chứng rõ ràng cho việc vận dụng hiệu quả các thuật toán Trí tuệ Nhân tạo vào một bài toán kinh điển. Qua quá trình xây dựng và hoàn thiện, hệ thống đã đáp ứng được các mục tiêu đề ra:
@@ -419,8 +408,20 @@ Dự án **8-Puzzle Visualizer** là minh chứng rõ ràng cho việc vận d�
 ---
 ## 📺 Video Báo Cáo Dự Án
 
-[![Xem Video Báo Cáo](img/Vid.png)]()
+[![Xem Video Báo Cáo](img/Vid.png)](https://drive.google.com/file/d/1bFj8ae55VV30eq0pbreY-_WEyHqERKlO/view?usp=sharing)
 
+
+---
+
+## 🚀 Cách chạy chương trình
+
+```bash
+# Cài đặt các thư viện cần thiết
+pip install pygame
+
+# Chạy ứng dụng
+python main.py
+```
 ---
 
 ## 👤 Tác giả

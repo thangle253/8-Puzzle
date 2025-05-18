@@ -517,24 +517,6 @@ def main():
                                 algorithm_results.append((selected_algorithm_name, elapsed, expansions, 0))
 
 
-
-        if solving and solution:
-            draw_progress_bar(step, len(solution))
-            if step < len(solution):
-                # Ensure solution[step] is a tuple of two values
-                if isinstance(solution[step], tuple) and len(solution[step]) == 2:
-                    zero_idx, move_idx = solution[step]
-                    start_state[zero_idx], start_state[move_idx] = start_state[move_idx], start_state[zero_idx]
-                    step += 1
-                    step_count += 1
-                    pygame.display.flip()
-                    pygame.time.delay(200)
-                else:
-                    print("Invalid step format in solution. Expected a tuple of two values.")
-                    solving = False
-            else:
-                solving = False
-
         if ac3_data and ac3_data['auto_running']:
             current_time = pygame.time.get_ticks()
             # Giảm tần suất cập nhật để giảm hiện tượng giật
