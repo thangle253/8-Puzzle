@@ -122,6 +122,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### So sánh kết quả thực nghiệm
 
 📊 **Minh họa bảng kết quả:**  
+
 ![Kết quả thuật toán Uninformed](img/KQ1.png)
 
 #### Nhận xét
@@ -175,6 +176,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### So sánh kết quả thực nghiệm
 
 📊 **Minh họa bảng kết quả:**  
+
 ![Kết quả thuật toán Informed](img/KQ2.png)
 
 #### Nhận xét
@@ -225,6 +227,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### So sánh kết quả thực nghiệm
 
 📊 **Minh họa bảng kết quả:**  
+
 ![Kết quả thuật toán CSP](img/KQ3.png)
 
 #### Nhận xét
@@ -284,6 +287,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### So sánh kết quả thực nghiệm
 
 📊 **Minh họa bảng kết quả:**  
+
 ![Kết quả thuật toán Local Search](img/KQ4.png)
 
 #### Nhận xét
@@ -331,6 +335,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### So sánh kết quả thực nghiệm
 
 📊 **Minh họa bảng kết quả:**  
+
 ![Kết quả thuật toán Complex Environments](img/KQ5.png)
 
 #### Nhận xét
@@ -373,6 +378,7 @@ Dự án giải quyết bài toán **8 ô số (8-Puzzle)** – một bài toán
 #### So sánh kết quả thực nghiệm
 
 📊 **Minh họa bảng kết quả:**  
+
 ![Kết quả thuật toán Reinforcement Learning](img/KQ6.png)
 
 #### Nhận xét
@@ -409,6 +415,11 @@ Dự án **8-Puzzle Visualizer** là minh chứng rõ ràng cho việc vận d�
 - **Giao diện trực quan, dễ sử dụng**: Nhờ ứng dụng Pygame, hệ thống mang lại trải nghiệm thân thiện với người dùng. Giao diện hỗ trợ nhập trạng thái tùy chỉnh, lựa chọn thuật toán, xem từng bước giải cùng các chỉ số thống kê quan trọng.
 
 - **Hỗ trợ học tập và thực hành**: Đây không chỉ là một công cụ giải bài toán 8-Puzzle, mà còn là môi trường học tập sinh động, giúp sinh viên trực quan hóa kiến thức AI thông qua mô phỏng, GIF minh họa và phân tích kết quả thực tế. Dự án cũng góp phần rèn luyện kỹ năng lập trình, tư duy thuật toán và khả năng giải quyết vấn đề.
+
+---
+## 📺 Video Báo Cáo Dự Án
+
+[![Xem Video Báo Cáo](.jpg)]()
 
 ---
 
